@@ -1,7 +1,7 @@
-const Users   = require("../models/user.js");
+const Users = require("../models/user.js");
 const jwt = require("jsonwebtoken");
-const Tasks   = require("../models/task.js");
-const bcrypt  = require('bcrypt');
+const Tasks = require("../models/task.js");
+const bcrypt = require("bcrypt");
 const { valid } = require("joi");
 const JWT_SECRET = "newtonSchool";
 
@@ -46,17 +46,42 @@ json =
     "status": 'fail',
     "message": error message
 }
-
 */
-
-const createTask =async (req, res) => {
-
-    //creator_id is user id who have created this task.
-
-    const { heading, description, token  } = req.body;
-    //Write your code here.
-
-}
+const createTask = async (req, res) => {
+  const { heading, description, token } = req.body;
+  //Write your code here.
+  try {
+    const decode = jwt.verify(token, JWT_SECRET);
+    if (!decode) {
+      res.status(404).json({
+        status: "fail",
+        message: "Invalid token",
+      });
+    }
+    const task = await Tasks.create({
+      heading,
+      description,
+      creator_id: decode.userId,
+    });
+    res.status(200).json({
+      message: "Task added successfully",
+      task_id: task._id,
+      status: "success",
+    });
+  } catch (error) {
+    if (error.name === 'JsonWebTokenError') {
+        res.status(404).json({
+          status: 'fail',
+          message: 'Invalid token'
+        });
+      } else {
+        res.status(404).json({
+          status: 'fail',
+          message: error.message
+        });
+      }
+  }
+};
 
 /*
 
@@ -98,9 +123,35 @@ json = {
 */
 
 const getdetailTask = async (req, res) => {
-
-    const task_id = req.body.task_id;
-    //Write your code here.
-}
+  const task_id = req.body.task_id;
+  //Write your code here.
+  try{
+    const task=await Tasks.findById(task_id)
+    if (!task) {
+        return res.status(404).json({
+          status: 'fail',
+          message: 'Task not found'
+        });
+      }
+  
+      res.status(200).json({
+        status: 'success',
+        data: {
+          Status: task.status,
+          _id: task._id,
+          heading: task.heading,
+          description: task.description,
+          creator_id: task.creator_id
+        }
+      });
+    } catch (error) {
+      res.status(404).json({
+        status: 'fail',
+        message: error.message
+      });
+    }
+  
+  
+};
 
 module.exports = { createTask, getdetailTask };
